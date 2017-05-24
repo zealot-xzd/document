@@ -1,0 +1,54 @@
+在Linux下搭建FTP服务器一般会用VSFTP，全称为“Very Secure FTP Daemon”，是一个以安全为重心的FTP服务器，关于VSFTP的介绍就不多写了，大家可以浏览官方网站http://vsftpd.beasts.org进行了解。
+ 
+搭建要求：
+FTP目录为/data/doc，允许用户rake上传和下载。
+ 
+配置：
+首先安装vsftp：
+yum install vsftpd -y
+ 
+建立用户
+useradd rake /sbin/nologin      #让此用户不能登录主机，只做为服务账号使用
+passwd rake rake                    #passwd后一定要跟用户名，否则修改的是root密码
+ 
+建立文件夹
+mkdir -p /data/doc
+ 
+配置文件
+/etc/vsftpd/vsftpd.conf 
+配置内容比较丰富，详细参数配置可使用 man vsftpd.conf来了解。现在只根据要求进行配置
+ 
+anonymous_enable=NO    #不能匿名访问
+chroot_local_user=YES    #这样可以将用户限制在主目录里，不能切换到其他目录，提高安全性
+local_root=/data/doc       #更改FTP主目录。此项文件中没有，自行添加在最后即可
+其他按照默认配置就好，wq保存退出，这样配置就完成了。
+ 
+ 
+修改FTP的Selinux设置
+先用getsebool -a | grep ftp 查看下当前信息
+无标题.png
+其中以下两项需要开启：
+setsebool -P ftp_home_dir=1
+sersebool -P allow_ftpd_full_access=1
+ftp_home_dir ：它解决了”500 OOPS：cannot change directory:/home/doc  login failed“的问题
+allow_ftpd_full_access： 它解决了能下载但不能上传的问题
+ 
+要想真正能够进行连接，还差一个防火墙的设置
+默认防火墙没有对外开放21端口，所以你在本机上测试可以进行连接、上传和下载，但其他网络中的主机则访问不了。
+几种处理：
+1、直接关闭防火墙，简单省事。service iptables stop
+2、图形化界面的。进入system--Administration--Firewall，勾选FTP，apply即可
+3、命令行的。
+iptables -A INPUT -p tcp --dport 21 -j ACCEPT
+iptables -A INPUT -p tcp --dport 20 -j ACCEPT
+并在/etc/sysconfig/system-firewall-config中添加
+--service=ftp
+ 
+好了，这样完整的FTP搭建就完毕了。现在启动服务
+service vsftpd start
+chconfig vsftpd on
+ 
+检查一下，端口是否处于侦听状态呢
+netstat -nuptl
+ 
+用flashfxp进行测试，完全ok！

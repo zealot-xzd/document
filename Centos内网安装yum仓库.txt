@@ -1,0 +1,70 @@
+centos搭建内网yum仓库
+=====================
+
+（1）挂载ISO镜像文件到/media/cdrom/下
+mount  -t  iso9660  -o  loop/root/CentOS-6.4-x86_64-bin-DVD1.iso  /media/cdrom/
+
+（2）、安装并启动vsftpd服务。
+由于我的服务器是最小化安装的，默认没有安装vsftpd服务，这里进入刚才挂载的目录。使用rpm -ivh 方式安装vsftpd服务。
+
+安装完成后启动vsftpd服务：
+[root@centos6 cdrom]# service  vsftpd  restart
+[root@centos6 cdrom]# chkconfig  vsftpd  on      ##设置vsftpd服务为自启动
+[root@centos6cdrom]# chkconfig  --list |grep  vsftpd
+vsftpd0:关闭1:关闭2:启用3:启用4:启用5:启用6:关闭
+
+（3）、建立yum仓库目录
+上面安装完vsftpd后默认会自动创建好/var/ftp/pub/目录，我们把yum仓库目录创建在该目录下，命名为centos6.4，如下：
+[root@centos6 cdrom]# mkdir -p  /var/ftp/pub/centos6.4/
+[root@centos6 cdrom]#cp  -rf  /media/cdrom/*  /var/ftp/pub/centos6.4/    ##将光盘镜像里的所有文件拷贝到yum仓库目录里
+
+（4）、创建yum源，更新软件包依赖关系。
+手工创建repository依赖关系文件，建立yum源需要安装createrepo这个软件包。由于我的最小化安装，该软件包安装还需要依赖下面两个包：
+python-deltarpm-3.5-0.5.20090913git.el6.x86_64.rpm
+deltarpm-3.5-0.5.20090913git.el6.x86_64.rpm
+于是把这三个包一并都安装上，如下：
+[root@centos6cdrom]# rpm  -ivh Packages/createrepo-0.9.9-17.el6.noarch.rpm Packages/python-deltarpm-3.5-0.5.20090913git.el6.x86_64.rpm Packages/deltarpm-3.5-0.5.20090913git.el6.x86_64.rpm
+ 
+ [root@centos6 cdrom]# rm  -rf /var/ftp/pub/centos6.4/repodata/    ##将原来的依赖关系文件删除，重新生成。
+[root@centos6 cdrom]#createrepo  -v  /var/ftp/pub/centos6.4/   ##重建依赖关系库文件，会重新生成repodata目录
+接下来修改yum源地址的配置文件。
+[root@centos6~]# cd  /etc/yum.repos.d/
+[root@centos6 yum.repos.d]# for i in `ls ./` ;do mv $i $i-bak;done;  ##把/etc/yum.repos.d/目录下的文件都改名备份一下。
+[root@centos6 yum.repos.d]#cp CentOS-Media.repo-bak CentOS-Media.repo
+[root@centos6 centos6.4]# vim /etc/yum.repos.d/CentOS-Media.repo   ##只用这一个文件，修改下面加粗部分内容。大家根据自己的实际目录更改。
+[c6-media]
+name=CentOS-$releasever- Media
+#baseurl=file:///media/CentOS/
+file:///media/cdrom/
+file:///media/cdrecorder/
+baseurl=ftp://192.168.0.109/pub/centos6.4/
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+
+说明：
+name=CentOS-$releasever- Media自定义说明
+baseurl=file:///yum/Server       指定使用的协议和yum源所在位置
+enabled=1                               是否启用该yum仓库，1为使用，0为不使用
+gpgcheck=0                           是否进程gpg秘钥检查，1为检查，0为不检查
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release         指定gpg秘钥所在位置
+ 
+说明：
+baseurl=    一栏是指定使用何种yum源
+file       表示使用本地yum源，格式为file://源路径
+ftp       表示使用ftp协议方式获得yum源，格式为ftp://sourceIP/repository目录
+http       表示使用http协议方式获得Yum源，格式为http://sourceIP/repository目录
+ 
+gpgcheck=       一栏表示是否秘钥检测，如果需要检查，可以手工导入秘钥
+#rpm    --import   /etc/pki/rpm-gpg/gpg秘钥文件名
+ 
+在/etc/yum.repo.d/目录下，最好只存在一个后缀名为repo的文件，其他的文件改名，防止干扰。
+ 
+[root@centos6 centos6.4]# yum  clean  all     ##清除一下yum缓存，否则可能 yum安装的时候还会报错。
+
+用yum安装screen软件包，测试正常。如下：
+[root@centos6 centos6.4]# yum  install  screen  -y       ##使用-y参数，意思是直接安装不用再次确认。
+
+
+注意：SELinux(安全增强Linux)，iptables(防火墙)的影响
+

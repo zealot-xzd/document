@@ -1,0 +1,52 @@
+字符集设置成ZHS16GBK：汉字占2个字节。
+
+字符集设置成AL32UTF8：汉字占3个字节。
+
+查询字符集：select * from v$nls_parameters t where t.PARAMETER='NLS_CHARACTERSET';
+
+很多新手在建数据库或添加表、字段时，会这样忽略一个问题：ORACLE 中 VARCHAR2类型的字段长度是按照 byte 来定义的。如果数据库使用的字符集是 GBK,GB2312 或者其他定长字符集的话，这个问题似乎可以被忽略，因为只要把数据库的字段长度/2 就可以得到你要限制插入该字段的中文长度了。 但是，如果数据库的字符集是 UTF-8 呢，杯具了吧，人家是变长的。
+       有人说数据库字段长度/3，这是一定不可取的，因为 UTF-8 是变长表示的，平均为 3byte表示一个字符，而并不是一定用 3byte。 其实人家 ORACLE 没这么笨，本来就可以用字符为单位来定义 varchar2 的长度的，这个时候需要注意在建表时这样写：
+Sql 代码:
+create table ABC_TABLE (A_FIELD varchar2(20 char)) 这个 varchar2(20 char)就表示了是用字符为单位来定义了，而默认情况下的 varchar2(20)
+这样就是字节！如果你之前没考虑到这个问题，而现在遇到了，又想更改你的字段定义的话，可以这样
+写：
+Sql 代码:
+alter table ABC_TABLE modify (A_FIELD varchar2(20 char)) 
+但是如果你不确定究竟是怎么定义的，或者，你想找出所有采用字节定义长度的字段，可以试试用这样的方法：
+Sql 代码:
+select * from user_tab_columns where CHAR_USED='B' 
+这里的 CHAR_USED 的意思是：如果是字符定义-'C'，字节定义-'B'如果需要批量修改所有的以字节数定义的字符串长度，需要创建一个类似这样的存储过程：
+Sql 代码:
+
+    create or replace procedure pro_fix_varchar as   
+    cursor fieldList is   
+     select T1.TABLE_NAME,T1.COLUMN_NAME,T1.DATA_LENGTH from USER_TAB_COLUMNS T1   
+     left join user_tables T2 on T2.TABLE_NAME=T1.TABLE_NAME  where T2.TABLE_NAME is not null   
+     and T2.TABLESPACE_NAME='MY_TABLESPACE' --请把这里修改为你自己的表空间名  
+     and CHAR_USED='B';   
+    tblName varchar2(2000);   
+    fieldName varchar2(2000);   
+    dataLen varchar2(10);   
+    sqlStr varchar2(2000);   
+    cnt integer;   
+    BEGIN   
+     dbms_output.put_line('begin');   
+     cnt:=0;   
+     open fieldList;   
+     loop   
+     fetch fieldList into tblName,fieldName,dataLen;   
+     exit when fieldList%notfound;   
+     sqlStr:='alter table "'||tblName||'" modify ("'||fieldName||'" varchar2('||dataLen||'   
+    char))';   
+     execute immediate sqlStr;   
+     commit;   
+     cnt:=cnt+1;   
+     end loop;   
+     close fieldList;   
+     dbms_output.put_line('fixed '||cnt||' field(s).');   
+    end pro_fix_varchar;   
+
+然后调用这个存储过程：
+Sql 代码:
+call pro_fix_varchar(); 
+即可 
