@@ -1,0 +1,33 @@
+在grub2硬盘的计数是从0开始的，分区的计数是从1计数的
+
+例如（hd0，msdos1）表示第一个硬盘第一个分区
+
+msdos5表示拓展分区
+
+一个硬盘的分区有三种类型：主分区、拓展分区、逻辑分区
+
+硬盘＝主分区＋拓展分区
+
+拓展分区＝若干个逻辑分区
+
+
+如上所示：ls命令可以查看硬盘情况
+
+ls命令查看系统磁盘，分区情况
+
+cat命令可以查看分区情况，通过敲入cat （hd0 然后加上tab就会显示分区情况
+grub>cat (hd0	
+
+我们可以看到widows是在（hd0，msdos1）
+
+grub>set root=(hd0,msdos1)
+
+使用tab键自动补齐
+grub>insmod /boot/grub/x86_64-efi/ntfs.mod
+
+grub>initrd
+
+grub>boot
+
+
+
