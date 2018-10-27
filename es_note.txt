@@ -1,0 +1,71 @@
+1.  索引文档
+
+    使用自定义的ID
+    PUT /website/blog/123
+    {   
+      "title": "My first blog entry",
+      "text":  "Just trying this out...",
+      "date":  "2014/01/01"
+    }
+
+    Autogenerating IDs
+    POST /website/blog/
+    {
+      "title": "My second blog entry",
+      "text":  "Still trying this out...",
+      "date":  "2014/01/01"
+    }
+
+2.  取回一个文档 
+    GET /website/blog/123?pretty
+
+3.  检查文档是否存在
+    curl -i -XHEAD http://localhost:9200/website/blog/123
+
+4.  更新整个文档
+    PUT /website/blog/123
+    {
+      "title": "My first blog entry",
+      "text":  "I am starting to get the hang of this...",
+      "date":  "2014/01/02"
+    }
+
+    在 Elasticsearch 中文档是 不可改变 的，不能修改它们。 相反
+    ，如果想要更新现有的文档，需要 重建索引 或者进行替换
+    在内部，Elasticsearch 已将旧文档标记为已删除，并增加一个全
+    新的文档。 尽管你不能再对旧版本的文档进行访问，但它并不会立
+    即消失。当继续索引更多的数据，Elasticsearch 会在后台清理这
+    些已删除文档
+
+5.  创建新文档
+    当我们索引一个文档， 怎么确认我们正在创建一个完全新的文档，
+    而不是覆盖现有的呢？
+    请记住， _index 、 _type 和 _id 的组合可以唯一标识一个文档
+    。所以，确保创建一个新文档的最简单办法是，使用索引请求的 PO
+    ST 形式让 Elasticsearch 自动生成唯一 _id :
+    POST /website/blog/
+    { ... }
+
+    PUT /website/blog/123?op_type=create
+    { ... }
+
+    PUT /website/blog/123/_create
+    { ... }
+
+6.  删除文档
+    DELETE /website/blog/123
+
+7.  文档的部分更新
+    POST /website/blog/1/_update
+    {
+       "doc" : {
+          "tags" : [ "testing" ],
+          "views": 0
+       }
+    }
+
+    POST /website/blog/1/_update
+    {
+       "script" : "ctx._source.views+=1"
+    }
+
