@@ -1,0 +1,111 @@
+TCP CLOSE_WAIT 过多解决方案
+
+一、“多半是程序的原因”
+
+二、linux 下 CLOSE_WAIT过多的解决方法
+
+close_wait状态出现的原因是被动关闭方未关闭socket造成
+
+二、规避： 
+
+调整系统参数，包括句柄相关参数和TCP/IP的参数； 
+
+注意： 
+
+/proc/sys/fs/file-max 是整个系统可以打开的文件数的限制，由sysctl.conf控制； 
+
+ulimit修改的是当前shell和它的子进程可以打开的文件数的限制，由limits.conf控制； 
+
+lsof是列出系统所占用的资源,但是这些资源不一定会占用打开文件号的；比如：共享内存,信号量,消息队列,内存映射等,虽然占用了这些资源,但不占用打开文件号； 
+
+因此，需要调整的是当前用户的子进程打开的文件数的限制，即limits.conf文件的配置； 
+
+如果cat /proc/sys/fs/file-max值为65536或甚至更大，不需要修改该值； 
+
+若ulimit -a ；其open files参数的值小于4096（默认是1024), 则采用如下方法修改open files参数值为8192；方法如下： 
+
+1.使用root登陆，修改文件/etc/security/limits.conf 
+
+vim /etc/security/limits.conf
+ 添加 
+
+xxx - nofile 8192 
+
+xxx 是一个用户，如果是想所有用户生效的话换成 * ，设置的数值与硬件配置有关，别设置太大了。 
+
+#<domain>     <type>   <item>       <value>
+*         soft    nofile    8192 
+*         hard    nofile    8192
+#所有的用户每个进程可以使用8192个文件描述符。 
+
+2.使这些限制生效 
+
+确定文件/etc/pam.d/login 和/etc/pam.d/sshd包含如下行： 
+
+session required pam_limits.so 
+
+然后用户重新登陆一下即可生效。 
+
+3. 在bash下可以使用ulimit -a 参看是否已经修改： 
+
+一、 修改方法：（暂时生效,重新启动服务器后,会还原成默认值） 
+
+sysctl -w net.ipv4.tcp_keepalive_time=600   
+sysctl -w net.ipv4.tcp_keepalive_probes=2 
+sysctl -w net.ipv4.tcp_keepalive_intvl=2
+注意：Linux的内核参数调整的是否合理要注意观察，看业务高峰时候效果如何。 
+
+二、 若做如上修改后，可起作用；则做如下修改以便永久生效。 
+
+vi /etc/sysctl.conf 
+
+若配置文件中不存在如下信息，则添加： 
+
+net.ipv4.tcp_keepalive_time = 1800 
+net.ipv4.tcp_keepalive_probes = 3 
+net.ipv4.tcp_keepalive_intvl = 15
+编辑完 /etc/sysctl.conf,要重启network 才会生效 
+
+/etc/rc.d/init.d/network restart 
+
+然后，执行sysctl命令使修改生效，基本上就算完成了。 
+
+------------------------------------------------------------ 
+
+修改原因： 
+
+当客户端因为某种原因先于服务端发出了FIN信号，就会导致服务端被动关闭，若服务端不主动关闭socket发FIN给Client，此时服务端Socket会处于CLOSE_WAIT状态（而不是LAST_ACK状态）。通常来说，一个CLOSE_WAIT会维持至少2个小时的时间（系统默认超时时间的是7200秒，也就是2小时）。如果服务端程序因某个原因导致系统造成一堆CLOSE_WAIT消耗资源，那么通常是等不到释放那一刻，系统就已崩溃。因此，解决这个问题的方法还可以通过修改TCP/IP的参数来缩短这个时间，于是修改tcp_keepalive_*系列参数： 
+
+tcp_keepalive_time： 
+
+/proc/sys/net/ipv4/tcp_keepalive_time 点击打开链接
+
+INTEGER，默认值是7200(2小时) 
+
+当keepalive打开的情况下，TCP发送keepalive消息的频率。建议修改值为1800秒。 
+
+tcp_keepalive_probes：INTEGER 
+
+/proc/sys/net/ipv4/tcp_keepalive_probes 
+
+INTEGER，默认值是9 
+
+TCP发送keepalive探测以确定该连接已经断开的次数。(注意:保持连接仅在SO_KEEPALIVE套接字选项被打开是才发送.次数默认不需要修改,当然根据情形也可以适当地缩短此值.设置为5比较合适) 
+
+tcp_keepalive_intvl：INTEGER 
+
+/proc/sys/net/ipv4/tcp_keepalive_intvl 
+
+INTEGER，默认值为75 
+
+当探测没有确认时，重新发送探测的频度。探测消息发送的频率（在认定连接失效之前，发送多少个TCP的keepalive探测包）。乘以tcp_keepalive_probes就得到对于从开始探测以来没有响应的连接杀除的时间。默认值为75秒，也就是没有活动的连接将在大约11分钟以后将被丢弃。(对于普通应用来说,这个值有一些偏大,可以根据需要改小.特别是web类服务器需要改小该值,15是个比较合适的值) 
+
+ 
+
+1. 系统不再出现“Too many open files”报错现象。 
+
+2. 处于TIME_WAIT状态的sockets不会激长。 
+
+在 Linux 上可用以下语句看了一下服务器的TCP状态(连接状态数量统计)： 
+
+netstat -n| awk '/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}'
