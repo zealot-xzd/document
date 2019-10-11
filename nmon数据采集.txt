@@ -1,0 +1,33 @@
+五，数据采集
+性能测试时，需要根据测试场景的执行情况，分析一段时间内系统资源的变化，这时需要nmon采集数据并保存下来，以下是常用的参数：
+
+      -f 参数:生成文件,文件名=主机名+当前时间.nmon
+
+     -T 参数:显示资源占有率较高的进程
+
+     -s 参数:-s 10表示每隔10秒采集一次数据
+
+     -c 参数:-s 10表示总共采集十次数据
+
+     -m 参数:指定文件保存目录
+
+具体的参数学习可参考博客：https://www.cnblogs.com/iclk/p/4456311.html
+
+如每隔5秒采集一次，一共采集12次，就是1分钟的数据（生成的文件已标红）：
+
+[qgc@localhost nmon16d]$ nmon -f -s 5 -c 12 -m /home/qgc/Desktop/
+[qgc@localhost nmon16d]$ nmon -f -T -s 5 -c 12 -m /home/qgc/Desktop/
+[qgc@localhost Desktop]$ ls
+lmon16g.c                   localhost_180827_2318.nmon  nmon16d_x86.tar.gz
+localhost_180827_2317.nmon  nmon16d                     Test
+数据采集完毕后，如需关闭nmon进程，需要获取nmon的pid（已标红）
+
+[qgc@localhost Desktop]$ ps -ef | grep nmon
+qgc        4455（pid）   4349（ppid）  0 23:40 pts/0    00:00:00 nmon
+qgc        4491   4429  0 23:40 pts/1    00:00:00 grep nmon
+再安全杀掉该进程：kill -9 pid
+
+[qgc@localhost Desktop]$ kill -9 4455
+[qgc@localhost Desktop]$ ps -ef | grep nmon
+qgc        4493   4429  0 23:40 pts/1    00:00:00 grep nmon
+
