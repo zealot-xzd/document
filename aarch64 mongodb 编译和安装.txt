@@ -1,0 +1,121 @@
+aarch64 mongodb 编译和安装
+raspberry pi3官方支持是32bit的系统，使用mongodb的时候有2G数据库大小的限制，32bit的系统上数据大点基本上就可以认为不能用了，所以要装64bit的opensuse。
+
+ 
+
+安装了suse之后，发现没有mongodb的程序，于是安装了Factory_ARM database的rpm源， 但是发现这个源里面mongod是不能用的，原因是里面没有aarch64的配置，导致了没有可以用的store engine，会告诉你找不到wiredtiger或者mmapv1的engine，应为aarch64的默认编译是不配store engine的，我们需要自己配置了编译一个。
+
+ 
+
+糟糕的事情是用虚拟机发现安装了个opensuse之后，装了默认的cross-aarh64-gcc 后，用了下这个toolchain，发现竟然只有gcc ，但是却没有glibc，真的不知道该说啥好了，不知道是我做的不对呢，还是opensuse的社区比较奇葩，好歹suse也是商业版的啊，缺的东西也太多了，就只能搞个第三方的toolchain用用了。
+
+最后选定了linaro的toolchain
+
+下载地址：
+
+https://releases.linaro.org/components/toolchain/binaries/5.3-2016.05/aarch64-linux-gnu/gcc-linaro-5.3.1-2016.05-x86_64_aarch64-linux-gnu.tar.xz
+
+由于opensuse的glibc的版本是 2.22 而linaro的glibc版本没有出现2.22的，于是就选择了这个2.21的版本的。
+
+解压:
+
+tar xvf gcc-linaro-5.3.1-2016.05-x86_64_aarch64-linux-gnu.tar.xz
+
+ 
+
+toolchain好了后就要下载代码了
+
+mongodb的代码下载：
+
+git clone https://github.com/mongodb/mongo.git
+
+ 
+
+由于想要做个rpm 包，so做下src package，这里选用比较新的版本3.4.2
+
+git archive --format tar.gz --prefix mongodb-org-r3.4.2/ --output ~/rpmbuild/SOURCES/mongodb-org-r3.4.2.tar.gz  r3.4.2
+ 
+
+默认的mongo下的代码是通过网上下载binary packge做rpm的，但是我们要的是从soure开始，需要修改下rpm下的mongodb-org.spec 文件
+
+主要修改的内容是
+
+1. 添加了build的命令，里面配置了aarch64的编译方法，把wiredtiger和mmapv1的store engine都开了， -j job数根据自己的配置调整
+
+2. 修改了install的路径，并对结果进行了strip（默认的scons的strip没找到，不知道咋搞）
+
+3. 删除了一些没有的tools
+
+patch 如下：
+
+复制代码
+diff --git a/rpm/mongodb-org.spec b/rpm/mongodb-org.spec
+index 66ff4ca..c548e79 100644
+--- a/rpm/mongodb-org.spec
++++ b/rpm/mongodb-org.spec
+@@ -164,10 +164,18 @@ This package provides the MongoDB static library and header files needed to deve
+ %setup
+
+ %build
++TOOLCHAIN=toolchain路径
++scons --release --dbg=off MONGO_VERSION=3.4.2 CC=$TOOLCHAIN/aarch64-linux-gnu-gcc  CXX=$TOOLCHAIN/aarch64-linux-gnu-g++ TARGET_ARCH=aarch64 --mmapv1=on --wiredtiger=on --disable-warnings-as-errors -j6 CF
+LAGS="-march=armv8-a+crc -mtune=generic" core tools VERBOSE=on
+
+ %install
+-mkdir -p $RPM_BUILD_ROOT/usr
+-cp -rv bin $RPM_BUILD_ROOT/usr
++TOOLCHAIN=toolchain路径
++scons --release --dbg=off MONGO_VERSION=3.4.2 CC=$TOOLCHAIN/aarch64-linux-gnu-gcc  CXX=$TOOLCHAIN/aarch64-linux-gnu-g++ TARGET_ARCH=aarch64 --mmapv1=on --wiredtiger=on --disable-warnings-as-errors -j6 CFLAGS="-march=armv8-a+crc -mtune=generic" install
++$TOOLCHAIN/aarch64-linux-gnu-strip build/install/bin/mongod
++$TOOLCHAIN/aarch64-linux-gnu-strip build/install/bin/mongo
++$TOOLCHAIN/aarch64-linux-gnu-strip build/install/bin/mongos
++$TOOLCHAIN/aarch64-linux-gnu-strip build/install/bin/mongoperf
++mkdir -p $RPM_BUILD_ROOT/usr/bin
++cp -rv build/install/bin $RPM_BUILD_ROOT/usr/
+ mkdir -p $RPM_BUILD_ROOT/usr/share/man/man1
+ cp debian/*.1 $RPM_BUILD_ROOT/usr/share/man/man1/
+ # FIXME: remove this rm when mongosniff is back in the package
+@@ -222,10 +230,8 @@ fi
+ %attr(0755,mongod,mongod) %dir /var/log/mongodb
+ %attr(0755,mongod,mongod) %dir /var/run/mongodb
+ %attr(0640,mongod,mongod) %config(noreplace) %verify(not md5 size mtime) /var/log/mongodb/mongod.log
+-%doc GNU-AGPL-3.0
++%doc GNU-AGPL-3.0.txt
+ %doc README
+-%doc THIRD-PARTY-NOTICES
+-%doc MPL-2
+
+
+
+@@ -243,16 +249,7 @@ fi
+ %defattr(-,root,root,-)
+ #%doc README GNU-AGPL-3.0.txt
+
+-%{_bindir}/bsondump
+-%{_bindir}/mongodump
+-%{_bindir}/mongoexport
+-%{_bindir}/mongofiles
+-%{_bindir}/mongoimport
+-%{_bindir}/mongooplog
+ %{_bindir}/mongoperf
+-%{_bindir}/mongorestore
+-%{_bindir}/mongotop
+-%{_bindir}/mongostat
+
+ %{_mandir}/man1/bsondump.1*
+ %{_mandir}/man1/mongodump.1*
+复制代码
+ 
+
+接下来编译代码就行了
+
+rpmbuild  -ba --target=aarch64  -D"dynamic_version r3.4.2" -D "dynamic_release r3.4.2"  -D "_arch aarch64" rpm/mongodb-org.spec
+ 
+
+PS. 
+
+因为mongodb用了不少的模版，编译的时候需要相当多的内存，要有心理准备:P
+
+ 
+
+编译完成后，rpm包就可以直接用来安装了

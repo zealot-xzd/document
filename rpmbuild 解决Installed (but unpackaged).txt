@@ -1,0 +1,14 @@
+rpmbuild 解决Installed (but unpackaged) file(s) found的方法
+
+找到 /usr/lib/rpm/macros 中
+%__check_files
+
+/usr/lib/rpm/check-files %{buildroot} 注释掉
+2、在/usr/lib/rpm/macros文件中有一个定义:
+%_unpackaged_files_terminate_build 1，把1改为0只警告
+3、在spec文件中，找到%files（之下有很多%{_bindir}、%{_libdir}、%{_datadir}的），在其下依葫芦画瓢的添加上面提示的内容。
+/usr/bin/xxx => %{_bindir}/xxx
+/usr/lib/xxx => %{_libdir}/xxx
+/usr/include/xxx => %{_includedir}/xxx
+/usr/share/xxx => %{_datadir}
+/xxx/usr/man/xxx => %{_mandir}/xxx
