@@ -1,0 +1,43 @@
+rpmbuild修改编译选项后是否可以不用整个从头开始？
+发现仅仅只是在spec中添加一条编译选项后rpmbuild会整个重新来过。。。（rm旧的build目录，解包，configure，make。。。）这样很耗时间啊。
+旧的build目录就在那里为什么一定要移除呢？就在旧的基础上开始不行么？
+
+
+代码:
+ -bp build through %prep (unpack sources and apply
+ patches) from <specfile>
+ -bc build through %build (%prep, then compile)
+ from <specfile>
+ -bi build through %install (%prep, %build, then
+ install) from <specfile>
+ -bl verify %files section from <specfile>
+ -ba build source and binary packages from
+ <specfile>
+ -bb build binary package only from <specfile>
+ -bs build source package only from <specfile>
+ -tp build through %prep (unpack sources and apply
+ patches) from <tarball>
+ -tc build through %build (%prep, then compile)
+ from <tarball>
+ -ti build through %install (%prep, %build, then
+ install) from <tarball>
+ -ta build source and binary packages from <tarball>
+ -tb build binary package only from <tarball>
+ -ts build source package only from <tarball>
+ --rebuild build binary package from <source package>
+ --recompile build through %install (%prep, %build, then
+ install) from <source package>
+ --buildroot=DIRECTORY override build root
+ --clean remove build tree when done
+ --nobuild do not execute any stages of the build
+ --nodeps do not verify build dependencies
+ --nodirtokens generate package header(s) compatible with
+ (legacy) rpm[23] packaging
+ --rmsource remove sources when done
+ --rmspec remove specfile when done
+ --short-circuit skip straight to specified stage (only for c,i)
+
+
+了解，-bc --short-circuit 和 -bi --short-circuit 可以仅仅进行 %build 和 %install 的动作。
+
+不过我最后还想产生 rpm 包，-bb 不能 --short-circuit 的么？还有其他方法产生 rpm 包么？
