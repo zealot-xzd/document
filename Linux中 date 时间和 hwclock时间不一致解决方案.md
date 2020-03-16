@@ -15,6 +15,7 @@ Mon, 11 Nov 2019 16:30:59 +0800
 
 3. 将时区信息拷贝，并覆盖原来的时区信息，操作命令：
 [root@102122190 zhidong]# cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+或者 ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 4. 操作系统有两个时间： 软件时间和硬件时间
 软件时间： 查看方式 date，是是距离1970.1.1的时间差；
