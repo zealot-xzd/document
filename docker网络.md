@@ -1,4 +1,4 @@
-# 如果要是用systemctl 管理服务就要加上参数 --privileged 来增加权，并且不能使用默认的bash，换成 init
+# 如果要是用systemctl 管理服务就要加上参数 --privileged 来增加权限，并且不能使用默认的bash，换成 init
 docker run -d -it --privileged --name centos-ak centos /usr/sbin/init
 
 
@@ -9,7 +9,7 @@ NETWORK ID     NAME        DRIVER       SCOPE
 1252da701e55    host        host        local
 237ea3d5cfbf    none        null        local
 
-启动 Docker的时候，用 --network 参数，可以指定网络类型
+启动 Docker容器的时候，用 --network 参数，可以指定网络类型
 docker run -itd --name centos-ak --network bridge --ip 172.17.0.10 centos:latest /bin/bash
 
 bridge：桥接网络
@@ -29,7 +29,7 @@ docker run -itd --net bridge --ip 172.17.0.10 centos:latest /bin/bash
 docker: Error response from daemon: User specified IP address is supported on user defined networks only.
 
 步骤1: 创建自定义网络
-docker network create --subnet=172.18.0.0/16 mynetwork
+docker network create **-d bridge** **--subnet=172.18.0.0/16** mynetwork
 ➜ ~ docker network ls
 NETWORK ID     NAME        DRIVER       SCOPE
 9781b1f585ae    bridge       bridge       local
@@ -39,7 +39,6 @@ NETWORK ID     NAME        DRIVER       SCOPE
 
 步骤2: 创建Docker容器
 docker run -itd --name networkTest1 --net mynetwork --ip 172.18.0.2 centos:latest /bin/bash
-
 
 # 
 docker run -itd --privileged --name centos-ak --net docker-br0 --ip 172.20.0.3 centos /usr/sbin/init
