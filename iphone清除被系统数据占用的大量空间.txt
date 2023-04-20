@@ -1,0 +1,23 @@
+C:\Windows\system32>mklink
+命令语法不正确。
+创建符号链接。
+
+MKLINK [[/D] | [/H] | [/J]] Link Target
+
+        /D      创建目录符号链接。默认为文件
+                符号链接。
+        /H      创建硬链接而非符号链接。
+        /J      创建目录联接。
+        Link    指定新的符号链接名称。
+        Target  指定新链接引用的路径
+                (相对或绝对)。
+
+1. 创建符号链接，将备份文件存放到容量大的分区
+C:\Windows\system32>mklink /D C:\Users\zealot\Apple\MobileSync\Backup E:\Backup
+为 C:\Users\zealot\Apple\MobileSync\Back <<===>> E:\Backup_dir 创建的符号链接
+
+2. 使用itunes备份文件：摘要->备份->手动备份和恢复， 备份时间有点长
+
+3. 在手机上抹掉所有数据
+
+3. 恢复备份，时间有点长

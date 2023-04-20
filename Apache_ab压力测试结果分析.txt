@@ -1,0 +1,144 @@
+测试说明：模拟100个用户，对服务器发起总共1000次请求。
+
+测试命令： ab -n 1000 -c 100 https://xxx.xxx.xxx/
+
+测试报告如下图：
+
+在这里插入图片描述
+
+apache的版本信息
+
+This is ApacheBench, Version 2.3 <$Revision: 1843412 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+1
+2
+3
+测试完成度
+
+Benchmarking xxx.xxx.xxx (be patient)
+Completed 100 requests
+Completed 200 requests
+Completed 300 requests
+Completed 400 requests
+Completed 500 requests
+Completed 600 requests
+Completed 700 requests
+Completed 800 requests
+Completed 900 requests
+Completed 1000 requests
+Finished 1000 requests
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+服务器所用的软件信息
+
+Server Software:        nginx/1.15.11
+1
+被测主机名
+
+Server Hostname:        xxx.xxx.xxx
+1
+被测主机的服务端口号
+
+Server Port:            80
+1
+请求的具体文件
+
+Document Path:          /
+1
+求的文件大小
+
+Document Length:         2426 bytes
+1
+并发级别，也就是并发数，请求中－c参数指定的数量
+
+Concurrency Level:      100
+1
+本次测试总共花费的时间
+
+Time taken for tests:   14.708 seconds
+1
+表示总请求数量
+
+Complete requests:      1000
+1
+表示失败的请求数量，这里的失败是指请求在连接服务器、发送数据等环节发生异常，以及无响应后超时的情况。如果接收到的HTTP响应数据的头信息中含有2XX以外的状态码，则会在测试结果中显示另一个名为“Non-2xx responses”的统计项，用于统计这部分请求数，这些请求并不算在失败的请求中。
+
+Failed requests:        848
+   (Connect: 0, Receive: 0, Length: 848, Exceptions: 0)
+Non-2xx responses:      848
+1
+2
+3
+表示所有请求的响应数据长度总和，包括每个HTTP响应数据的头信息和正文数据的长度。注意这里不包括HTTP请求数据的长度，仅仅为web服务器流向用户PC的应用层数据总长度。
+
+Total transferred:      814854 bytes
+1
+表示所有请求的响应数据中正文数据的总和，也就是减去了Total transferred中HTTP响应数据中的头信息的长度。
+
+HTML transferred:       492560 bytes
+1
+吞吐率，计算公式：Complete requests/Time taken for tests
+
+Requests per second:    67.99 [#/sec] (mean)
+1
+用户平均请求等待时间，计算公式：Time token for tests/（Complete requests/Concurrency Level）。
+
+Time per request:       1470.800 [ms] (mean)
+1
+服务器平均请求等待时间，计算公式：Time taken for tests/Complete requests，正好是吞吐率的倒数。也可以这么统计：Time per request/Concurrency Level。
+
+Time per request:       14.708 [ms] (mean, across all concurrent requests)
+1
+表示这些请求在单位时间内从服务器获取的数据长度，计算公式：Total trnasferred/ Time taken for tests，这个统计很好的说明服务器的处理能力达到极限时，其出口宽带的需求量。
+
+Transfer rate:          54.10 [Kbytes/sec] received
+1
+这几行组成的表格主要是针对响应时间,也就是第一个Time per request进行细分和统计。
+Connect:网络链接
+Processing:系统处理
+Waiting:等待
+min:最小值
+mean:平均值
+[+/-sd]:标准差（Standard Deviation） ，也称均方差（mean square error），表示数据的离散程度，数值越大表示数据越分散，系统响应时间越不稳定。
+median:中位数
+max:最大值
+
+需要注意的是表中的Total并不等于前三行数据相加，因为前三行的数据并不是在同一个请求中采集到的，可能某个请求的网络延迟最短，但是系统处理时间又是最长的呢。所以Total是从整个请求所需要的时间的角度来统计的。这里可以看到最慢的一个请求花费了7106ms，这个数据可以在下面的表中得到验证。
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.6      0      10
+Processing:   237 1271 619.7   1074    7106
+Waiting:      225 1270 619.8   1073    7106
+Total:        237 1271 619.6   1074    7106
+1
+2
+3
+4
+5
+6
+这个表第一行表示有50%的请求都是在1074ms内完成的，可以看到这个值是比较接近平均系统响应时间（第一个Time per request: 1470.800 [ms] (mean)）
+
+以此类推，80%的请求是小于等于1179ms的。刚才我们看到响应时间最长的那个请求是7106ms，那么显然所有请求（100%）的时间都是小于等于7106毫秒的，也就是表中最后一行的数据肯定是时间最长的那个请求（longest request）
+
+Percentage of the requests served within a certain time (ms)
+  50%   1074
+  66%   1099
+  75%   1112
+  80%   1179
+  90%   1894
+  95%   2669
+  98%   3344
+  99%   4014
+ 100%   7106 (longest request)
