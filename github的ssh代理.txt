@@ -1,0 +1,7 @@
+修改~/.ssh/config文件(不存在则新建)
+
+Host github.com
+	HostName github.com
+	User git
+	# 走socks5代理
+	ProxyCommand nc -x 127.0.0.1:1080 %h %p
