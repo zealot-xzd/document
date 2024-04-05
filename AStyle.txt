@@ -1,0 +1,1 @@
+"C:\Program Files\astyle-3.4.13-x64\astyle.exe"  -S -L -xV -xc -xl -xn -A2 -M120 -Y -xW -xg -k1 -xb -j --indent=spaces=2 %f
