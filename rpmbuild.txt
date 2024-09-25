@@ -1,0 +1,15 @@
+rpmbuild命令：
+rpmbuild --showrc
+rpmbuild --define "_topdir path" -bb *.specs
+
+
+Per-User: By configuring the RPM topdir in $HOME/.rpmmacros
+
+%_topdir    $HOME/rpmbuild
+
+
+Per-Project: By configuring the RPM topdir in the Makefile or on the command line
+
+rpmbuild --define '_topdir build' -ba package.spec
+Note: in both cases, you will need to make sure your topdir directory has the appropriate directories (BUILD, SRPM, RPM, SPECS and SOURCES)
+

@@ -1,0 +1,39 @@
+snprintf()，函数原型为int snprintf(char *str, size_t size, const char *format, ...)。
+
+两点注意：
+
+(1) 如果**格式化后的字符串**长度 < size，则将此字符串全部复制到str中，并给其后添加一个字符串结束符('\0')；
+
+(2) 如果格式化后的字符串长度 >= size，则只将其中的(size-1)个字符复制到str中，并给其后添加一个字符串结束符('\0')，返回值为欲写入的字符串长度。
+
+使用snprintf函数时要注意上面两点，这是我看过无数使用这个函数的程序员绝大部分都存在的两点隐患：
+ 
+比如: 
+
+char buf[LEN];
+int n = snprintf(buf, LEN, "%s%d%s", str1, int2, str3);
+printf("total length n %d"\n, n);
+snprintf的返回值是欲写入的字符串长度，而不是实际写入的字符串度。如：
+
+char buf[8];
+int n = snprintf(buf, 5, "abcdefghijk");
+printf("n %d    buf %s\n", n, buf);
+ 
+运行结果为：
+n 11     buf abcd
+注意这个结果，只输出了abcd，长度为4，不是期待的5，没有输出 e ，说明snprintf函数最后自动加上去的'\0'，是算在size内部的，是格式化字符串的总长度（不包括'\0'），这里使用sizeof（buf）时需要注意+1，这一点与malloc申请空间类似。
+
+总结：
+
+1.snprintf会自动在格式化后的字符串尾添加\0，结尾符是包含在size长度内部的。
+
+2.snprintf会在结尾加上\0，不管buf空间够不够用，所以不必担心缓冲区溢出。
+
+3.snprintf的返回值n，当调用失败时，n为负数，当调用成功时，n为格式化的字符串的总长度（不包括\0），当然这个字符串有可能被截断，因为buf的长度不够放下整个字符串。
+
+可以判断输出
+if （ n < 0） : snprintf出错了
+if ( n >0 && n < sizeof(buf) ) : snprintf成功，并且格式了完成的字符串。
+if ( n >= sizeof(buf) ) : snprintf成功，但要格式化的字符串被截断了。
+
+
