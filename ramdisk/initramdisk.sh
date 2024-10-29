@@ -6,12 +6,12 @@ DISK_NAME=ramdisk
 MOUNT_PATH=/Volumes/$DISK_NAME
 
 # 设置备份文件的保存路径
-WORK_PATH=$HOME/ramdisk
-[[ -d $WORK_PATH ]] || mkdir -p $WORK_PATH
-BAK_PATH=$WORK_PATH/$DISK_NAME.tar.gz
+LOG_PATH=$HOME/Library/Logs/ramdisk
+[[ -d $LOG_PATH ]] || mkdir -p $LOG_PATH
+BAK_PATH=$LOG_PATH/$DISK_NAME.tar.gz
 
 # 设置ramdisk日志文件
-LOG=$WORK_PATH/init_ramdisk_log.txt
+LOG=$LOG_PATH/init_ramdisk_log.txt
 
 # 设置分配给内存盘的空间大小(MB) 这是上限值，一般情况下使用多少占多少的内存
 DISK_SPACE=1024

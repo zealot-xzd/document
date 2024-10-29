@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key>
-	<string>ramdisk</string>
+	<string>xzd.ramdisk</string>
 	<key>ProgramArguments</key>
 	<array>
 		<string>/Users/zealot/private-data/mydata/github/document/ramdisk/initramdisk.sh</string>
