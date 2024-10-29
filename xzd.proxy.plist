@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>xzd.proxy</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/zealot/private-data/tools/代理工具/v2ray-macos-64/v2ray</string>
+		<string>run</string>
+		<string>-c</string>
+		<string>/Users/zealot/private-data/tools/代理工具/v2ray-macos-64/config.json</string>
+	</array>
+  <key>StandardOutPath</key>
+  <string>/Users/zealot/private-data/tools/代理工具/v2ray-macos-64/proxy.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/zealot/private-data/tools/代理工具/v2ray-macos-64/proxy-error.log</string>
+	<key>RunAtLoad</key>
+	<true/>
+</dict>
+</plist>
