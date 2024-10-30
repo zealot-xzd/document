@@ -23,60 +23,39 @@ DISK_SPACE=1024
 DISK_SPACE=$(sysctl hw.memsize | awk '{print $2;}')
 DISK_SPACE=$(($DISK_SPACE/8))
 
-# 创建Ramdisk
-if [ ! -e $MOUNT_PATH ]; then
-    echo "["`date`"]" "Create ramdisk..." > $LOG
-    RAMDISK_SECTORS=$(($DISK_SPACE/512))
-    DISK_ID=$(hdiutil attach -nomount ram://$RAMDISK_SECTORS)
-    echo "["`date`"]" "Disk ID is :" $DISK_ID | tee -a $LOG
-    diskutil erasevolume HFS+ $DISK_NAME ${DISK_ID} | tee -a $LOG
-elif [[ $1 == "umount" ]]; then
-    echo "Delete/unmount ramdisk $MOUNT_PATH"
-    hdiutil detach $MOUNT_PATH || umount -f $MOUNT_PATH
-    exit
-fi
+function log_msg() {
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $@"
+}
 
-# 隐藏分区
-chflags hidden $MOUNT_PATH
+function create_ramdisk() {
+   # 创建Ramdisk
+ if [ ! -e $MOUNT_PATH ]; then
+     log_msg "Create ramdisk..." > $LOG
 
-## 恢复备份
-#if [ -s $BAK_PATH ]; then
-#    echo "["`date`"]" "Restoring BAK Files ..." | tee -a $LOG
-#    tar -zxvf $BAK_PATH -C $MOUNT_PATH 2>&1 | tee -a $LOG
-#fi
+     RAMDISK_SECTORS=$(($DISK_SPACE/512))
+     DISK_ID=$(hdiutil attach -nomount ram://$RAMDISK_SECTORS | tr -d [:space:])
+     log_msg "Disk device ID is: $DISK_ID, ret=$?" | tee -a $LOG
 
-# 设置要创建的文件夹
-Dirs=(
-"$MOUNT_PATH/Caches/Microsoft Edge"
-"$MOUNT_PATH/Caches/com.apple.Safari"
-"$MOUNT_PATH/Caches/Xcode"
-"$MOUNT_PATH/Caches/NeteaseMusic"
-"$MOUNT_PATH/downloads"
-)
-# 如果文件夹不存在，则创建相应的文件夹
-for Dir in "${Dirs[@]}"; do
-    if [ ! -d "$Dir" ]; then
-        echo "["`date`"]" "Making Directory: $Dir" | tee -a $LOG
-        mkdir -p "$Dir"
-    fi
-done
+     newfs_hfs -v 'Ramdisk' ${DISK_ID}
+     log_msg "Create hfs+ file system on $DISK_ID : ret=$?" | tee -a $LOG
 
+     mkdir -p ${MOUNT_PATH}
+     mount -o rw,noatime,nobrowse -t hfs ${DISK_ID} ${MOUNT_PATH}
+     log_msg "mount $DISK_ID to ${MOUNT_PATH}, ret=$?" | tee -a $LOG
 
-Links=(
-"$HOME/Library/Caches/Microsoft Edge"
-"$HOME/Library/Caches/com.apple.Safari"
-)
-# 如果链接不存在，则创建相应的软连接
-for Link in "${Links[@]}"; do
-    Dir_Name=${Link##*/}
-    if [ ! -L "$Link" ]; then
-        if [ -d "$Link" ]; then
-            echo "\nMove & Delete Dir: $Dir_Name" | tee -a $LOG
-            mv -v "$Link/*" "$MOUNT_PATH/Caches/$Dir_Name/" | tee -a $LOG
-            rm -rfv "$Link" | tee -a $LOG
-        fi
-    echo "\nCreate soft link: $LINK" | tee -a $LOG
-    ln -sv "$MOUNT_PATH/Caches/$Dir_Name" "$Link" | tee -a $LOG
-    fi
-done
+     chown root:wheel ${MOUNT_PATH}
+     log_msg "chown root:wheel ${MOUNT_PATH}" | tee -a $LOG
+
+     chmod 1777 ${MOUNT_PATH}
+     log_msg "set sticky bit: ${MOUNT_PATH}" | tee -a $LOG
+
+     log_msg "Create ramdisk finish" | tee -a $LOG
+ elif [[ $1 == "umount" ]]; then
+     hdiutil detach $MOUNT_PATH || umount -f $MOUNT_PATH
+     log_msg "Delete/unmount ramdisk $MOUNT_PATH, ret=$?"
+     exit
+ fi
+}
+
+create_ramdisk
 
